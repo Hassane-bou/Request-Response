@@ -5,6 +5,12 @@
 #include <string>
 #include <cctype>
 #include <vector>
+#include <cstdlib>
+#include <cerrno>
+#include <sstream>
+
+
+#define MAX_BODY 999999999UL
 
 struct HttpRequestLine
 {
@@ -28,6 +34,5 @@ struct HttpRequest
     bool chunked;
     std::string body;
 };
-
 
 #endif
