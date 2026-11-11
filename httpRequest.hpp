@@ -11,6 +11,8 @@
 
 
 #define MAX_BODY 999999999UL
+#define MAX_REQUEST_LINE 8192UL
+#define MAX_HEADERS 16384UL
 
 struct HttpRequestLine
 {
@@ -33,6 +35,11 @@ struct HttpRequest
     std::vector<HttpHeader> headers;
     bool chunked;
     std::string body;
+
+    HttpRequest() : chunked(false) {}
 };
+
+// // 0 = incomplet, 1 = OK, >= 400 = code d'erreur HTTP
+// int ParseRequest(std::string &req, HttpRequest &request, size_t &pos);
 
 #endif

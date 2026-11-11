@@ -1,7 +1,8 @@
+#include "requestparser.hpp"
 #include "httpRequest.hpp"
 
 
-int  ParseRequestline( std::string &req, HttpRequestLine &line ,size_t &index)
+int RequestParser::ParseRequestline( std::string &req, HttpRequestLine &line ,size_t &index)
 {
 
     size_t pos = req.find("\r\n");
@@ -48,7 +49,7 @@ int  ParseRequestline( std::string &req, HttpRequestLine &line ,size_t &index)
     return 1;
 }
 
-std::string TrimOWS( const std::string &value)
+std::string RequestParser::TrimOWS( const std::string &value)
 {
     std::string newVlaue;
     size_t pos = value.find_first_not_of(" \t");
@@ -61,7 +62,7 @@ std::string TrimOWS( const std::string &value)
     return newVlaue;
 
 }
-int IsValidHeaderName(std::string name)
+int RequestParser::IsValidHeaderName(std::string name)
 {
     std::string specaileCar = "!#$%&'*+-.^_`|~";
     if(name.empty())
@@ -80,7 +81,7 @@ int IsValidHeaderName(std::string name)
 }
 
 
-int ParseRequestHeader( std::string &req,HttpHeader &header,size_t &pos)
+int RequestParser::ParseRequestHeader( std::string &req,HttpHeader &header,size_t &pos)
 {
         size_t secondpos = req.find("\r\n",pos);
         if(secondpos == std::string::npos)
@@ -106,7 +107,7 @@ int ParseRequestHeader( std::string &req,HttpHeader &header,size_t &pos)
     return 1;
 }
 
-int ParseHeaders(std::string &req, HttpRequest &request, size_t &pos)
+int RequestParser::ParseHeaders(std::string &req, HttpRequest &request, size_t &pos)
 {
     while(true)
     {
@@ -125,7 +126,7 @@ int ParseHeaders(std::string &req, HttpRequest &request, size_t &pos)
     }
 }
 
-int checkHeaderNameEquals( std::string &name1, const std::string &name2)
+int RequestParser::checkHeaderNameEquals( std::string &name1, const std::string &name2)
 {
     if(name1.size() != name2.size())
         return 0;
@@ -143,7 +144,7 @@ int checkHeaderNameEquals( std::string &name1, const std::string &name2)
 
     return 1;
 }
- HttpHeader  *FindHeader(HttpRequest &request, const std::string &searchName)
+HttpHeader  *RequestParser::FindHeader(HttpRequest &request, const std::string &searchName)
 {
     for(size_t i = 0; i  < request.headers.size();i++)
     {
@@ -154,7 +155,7 @@ int checkHeaderNameEquals( std::string &name1, const std::string &name2)
 
     return NULL;
 }
-int countHeader( HttpRequest &request,  const std::string &name)
+int RequestParser::countHeader( HttpRequest &request,  const std::string &name)
 {
     int count  = 0 ;
     for(size_t i = 0; i < request.headers.size();i++)
@@ -167,7 +168,7 @@ int countHeader( HttpRequest &request,  const std::string &name)
 
 
 
-int ValidateHeaders(HttpRequest &request,unsigned long &Length)
+int RequestParser::ValidateHeaders(HttpRequest &request,unsigned long &Length)
 {
     request.chunked = false;
     Length = 0;
@@ -218,7 +219,7 @@ int ValidateHeaders(HttpRequest &request,unsigned long &Length)
     return 1;
 }
 
-int ParseBody(std::string &req,HttpRequest &request,size_t &pos, unsigned long &Length)
+int RequestParser::ParseBody(std::string &req,HttpRequest &request,size_t &pos, unsigned long &Length)
 {
     if(pos > req.size())
         return -1;
@@ -236,7 +237,7 @@ int ParseBody(std::string &req,HttpRequest &request,size_t &pos, unsigned long &
     return 1;
 }
 
-int ParseBodyWithChunked(std::string& req,HttpRequest &request, size_t &pos)
+int RequestParser::ParseBodyWithChunked(std::string& req,HttpRequest &request, size_t &pos)
 {
     std::string tempbody = "";
     size_t cursor = pos;
@@ -299,9 +300,16 @@ int ParseBodyWithChunked(std::string& req,HttpRequest &request, size_t &pos)
     return 1;
 }
 
-int ParseRequest(std::string &req, HttpRequest &request,size_t &pos)
+int  RequestParser::ParseRequest(std::string &req, HttpRequest &request,size_t &pos)
 {
-    request = httpRequest();
+    request = HttpRequest();
+    pos = 0;
+
+    if(req.find("\r\n") == std::string::npos && req.size() > MAX_REQUEST_LINE)
+        return 414;
+    if(req.find("\r\n\r\n") == std::string::npos && req.size() > MAX_HEADERS)
+        return 431;
+
 
     unsigned long Length=0;
     int result = ParseRequestline(req,request.requestLine,pos);
@@ -309,7 +317,7 @@ int ParseRequest(std::string &req, HttpRequest &request,size_t &pos)
     if(result == 0)
         return 0;
     if(result == -1)
-        return -1;
+        return 400;
 
     result = ParseHeaders(req,request,pos);
     std::cout << "Headers: " << result << std::endl;
@@ -330,7 +338,7 @@ int ParseRequest(std::string &req, HttpRequest &request,size_t &pos)
         if(body == 0)
             return 0;
         if(body == -1)
-            return -1;
+            return 400;
     }
     else if(request.chunked == true)
     {
@@ -338,7 +346,7 @@ int ParseRequest(std::string &req, HttpRequest &request,size_t &pos)
         if(chunkedbody == 0)
             return 0;
         if(chunkedbody == -1)
-            return -1;
+            return 400;
         if(chunkedbody == -2)
             return 413;
     }
@@ -350,14 +358,3 @@ int ParseRequest(std::string &req, HttpRequest &request,size_t &pos)
 
 
 
-int main()
-{
-  std::string req = "GET /index.html HTTP/1.1\r\n"
-                  "Host: localhost:8080\r\n"
-                  "\r\n";
-    HttpRequest request;
-    size_t pos = 0;
-    int nb = ParseRequest(req,request,pos);
-    std::cout << "Retour: " << nb << std::endl;
-    return 0;
-}
