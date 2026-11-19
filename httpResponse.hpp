@@ -4,8 +4,11 @@
 #include <sstream>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <fstream>
+#include <stdlib.h>
+#include <string>
+#include <errno.h>
 #include "httpRequest.hpp"
-
 
 
 struct Httpresponse
@@ -18,7 +21,8 @@ struct Httpresponse
 };
 
 
-
+Httpresponse BuildGetResponse(std::string &root, std::string &location,HttpRequestLine & request);
+std::string BuildResponse(Httpresponse &response);
 
 
 #endif
